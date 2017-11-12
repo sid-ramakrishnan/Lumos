@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CameraTest</string>
-    <string name="title_activity_main">MainActivity</string>
+    <string name="app_name">Lumos</string>
+    <string name="title_activity_main">Lumos</string>
     <string name="take_picture">Take picture</string>
 </resources>
