@@ -5,8 +5,10 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.services.vision.v1.Vision;
 import com.google.api.services.vision.v1.VisionRequestInitializer;
 import com.google.api.services.vision.v1.model.AnnotateImageRequest;
+import com.google.api.services.vision.v1.model.AnnotateImageResponse;
 import com.google.api.services.vision.v1.model.BatchAnnotateImagesRequest;
 import com.google.api.services.vision.v1.model.BatchAnnotateImagesResponse;
+import com.google.api.services.vision.v1.model.EntityAnnotation;
 import com.google.api.services.vision.v1.model.FaceAnnotation;
 import com.google.api.services.vision.v1.model.Feature;
 import com.google.api.services.vision.v1.model.Image;
@@ -136,38 +138,6 @@ public class MainActivity extends AppCompatActivity {
         textureView = (TextureView) findViewById(R.id.texture);
         assert textureView != null;
         textureView.setSurfaceTextureListener(textureListener);
-        takePictureButton = (Button) findViewById(R.id.btn_takepicture);
-        assert takePictureButton != null;
-
-
-
-        ///Inserting Azure test here
-
-
-
-
-        //
-        //
-        //
-        //
-
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-
-
-
-
-
-
-
-
-
         t1 = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
@@ -180,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
                             // Convert photo to byte array
                             try {
                                 JSONObject json = getWeatherJSON("40.000000","74.000000");
-                                String toSpeak = getInputToSpeech(json);
+                                String toSpeak = getInputToSpeech(json)+" You can now point your camera in any direction. Click on the screen to take a picture of your surroundings.";
                                 System.out.println("\n\n\n\n"+"String spoken: " + toSpeak);
                                 t1.speak(toSpeak,TextToSpeech.QUEUE_FLUSH,null,null);
 
@@ -199,12 +169,6 @@ public class MainActivity extends AppCompatActivity {
         }}});
 
 
-        takePictureButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                takePicture(7);
-            }
-        });
         textureView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -526,7 +490,19 @@ public class MainActivity extends AppCompatActivity {
 
                                 System.out.println("There!");
                                 System.out.println("Going to speak");
-                                String toSpeak = batchResponse.toString();
+                                List<AnnotateImageResponse> responses = batchResponse.getResponses();
+                                String toSpeak = "Few things close to you are ";
+                                for (AnnotateImageResponse R : responses)
+                                {
+                                    List<EntityAnnotation> entitylabels = R.getLabelAnnotations();
+                                    for (EntityAnnotation entitylabel : entitylabels)
+                                    {
+                                        System.out.println(entitylabel.getDescription());
+                                        toSpeak += entitylabel.getDescription() + ",";
+
+                                    }
+                                }
+                                System.out.println("ToSPEak final"+toSpeak);
                                 t1.speak(toSpeak,TextToSpeech.QUEUE_FLUSH,null,null);
 
                                 boolean isDeleted = file.delete();
