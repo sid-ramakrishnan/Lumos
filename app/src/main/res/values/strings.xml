@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">CameraTest</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="take_picture">Take picture</string>
+</resources>
