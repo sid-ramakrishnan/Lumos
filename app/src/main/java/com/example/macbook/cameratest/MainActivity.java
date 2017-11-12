@@ -37,6 +37,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.NetworkOnMainThreadException;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -54,7 +55,10 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import org.apache.commons.io.IOUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Console;
@@ -64,14 +68,31 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.ByteBuffer;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import java.net.URI;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
+
 import cz.msebera.android.httpclient.Header;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -80,6 +101,11 @@ public class MainActivity extends AppCompatActivity {
     private Button takePictureButton;
     private TextureView textureView;
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+
+    public static final String subscriptionKey = "13hc77781f7e4b19b5fcdd72a8df7156";
+    public static final String uriBase = "https://westcentralus.api.cognitive.microsoft.com/vision/v1.0/analyze";
+
+
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -102,6 +128,7 @@ public class MainActivity extends AppCompatActivity {
     private HandlerThread mBackgroundThread;
     public TextToSpeech t1;
 
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -111,14 +138,67 @@ public class MainActivity extends AppCompatActivity {
         textureView.setSurfaceTextureListener(textureListener);
         takePictureButton = (Button) findViewById(R.id.btn_takepicture);
         assert takePictureButton != null;
+
+
+
+        ///Inserting Azure test here
+
+
+
+
+        //
+        //
+        //
+        //
+
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+
+
+
+
+
+
+
+
+
         t1 = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if (status != TextToSpeech.ERROR) {
                     t1.setLanguage(Locale.US);
-                }
-            }
-        });
+
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Convert photo to byte array
+                            try {
+                                JSONObject json = getWeatherJSON("40.000000","74.000000");
+                                String toSpeak = getInputToSpeech(json);
+                                System.out.println("\n\n\n\n"+"String spoken: " + toSpeak);
+                                t1.speak(toSpeak,TextToSpeech.QUEUE_FLUSH,null,null);
+
+// Display toast on UI thread
+
+                            } catch (NetworkOnMainThreadException e) {
+                                e.printStackTrace();
+                            }
+
+
+
+                            // More code here
+                        }
+                    });
+
+        }}});
+
+
         takePictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -134,6 +214,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
         LocationManager locManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         boolean network_enabled = locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
@@ -153,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             location = locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-
+//            t1.speak("Here",TextToSpeech.QUEUE_FLUSH,null,null);
             if(location!=null){
                 double longitude = location.getLongitude();
                 double latitude = location.getLatitude();
@@ -166,6 +247,89 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public final String getInputToSpeech(JSONObject json)
+    {
+        try {
+            if(json != null){
+                JSONObject details = json.getJSONArray("weather").getJSONObject(0);
+                JSONObject main = json.getJSONObject("main");
+                DateFormat df = DateFormat.getDateTimeInstance();
+
+
+                String city = json.getString("name").toUpperCase(Locale.US) + ", " + json.getJSONObject("sys").getString("country");
+                String description = details.getString("description").toUpperCase(Locale.US);
+                Double temp = main.getDouble("temp");
+                System.out.println("Temperature : " + temp);
+                //String tempString = "Its fine outside!";
+                String tempString = "";
+                tempString = "The temperature outside is " + Integer.toString(temp.intValue())+" degrees.";
+                if(temp < 10.0){
+                    tempString += "It's quite chilly outside. You should bring a jacket.";
+                }
+
+//                String temperature = String.format("%.2f", main.getDouble("temp"))+ "°";
+                Double hum = main.getDouble("humidity");
+                String humidity = main.getString("humidity") + "%";
+
+                String humidityString = "";
+
+                if(hum>85.0)
+                {
+                    humidityString = "There's a strong chance of rain. Maybe you should bring an Umbrella.";
+                }
+
+                else
+                {
+                    humidityString = "There doesn't seem to be a chance of rain today.";
+                }
+
+                String pressure = main.getString("pressure") + " hPa";
+                String updatedOn = df.format(new Date(json.getLong("dt")*1000));
+
+                return tempString + humidityString;
+            }
+        } catch (JSONException e) {
+            //Log.e(LOG_TAG, "Cannot process JSON results", e);
+            return "EXCEPTION";
+        }
+        return "We don't know the weather";
+    }
+    public final JSONObject getWeatherJSON(String lat, String lon){
+        String OPEN_WEATHER_MAP_URL =
+                "http://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&units=metric";
+
+        String OPEN_WEATHER_MAP_API = "714fe2179ebe2a9c3e5b9d2dbcde280a";
+
+        try {
+            URL url = new URL(String.format(OPEN_WEATHER_MAP_URL, lat, lon));
+            HttpURLConnection connection =
+                    (HttpURLConnection)url.openConnection();
+
+            connection.addRequestProperty("x-api-key", OPEN_WEATHER_MAP_API);
+
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream()));
+
+            StringBuffer json = new StringBuffer(1024);
+            String tmp="";
+            while((tmp=reader.readLine())!=null)
+                json.append(tmp).append("\n");
+            reader.close();
+
+            JSONObject data = new JSONObject(json.toString());
+
+            // This value will be 404 if the request was not
+            // successful
+            if(data.getInt("cod") != 200){
+                System.out.println("Data: "+data);
+                return null;
+            }
+
+            return data;
+        }catch(Exception e){
+            return null;
+        }
+    }
 
 
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
